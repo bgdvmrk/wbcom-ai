@@ -1,0 +1,24 @@
+name: Ролики YouTube на страницы спикеров
+on:
+  schedule:
+    - cron: "17 */2 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+jobs:
+  clips:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 .github/clips.py
+      - name: Сохранить и пересобрать Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet clips.json; then echo "новых роликов нет"; exit 0; fi
+          git config user.name "wbcom-kb bot"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -qam "Новые ролики YouTube на страницах спикеров"
+          git push
+          gh api -X POST repos/${{ github.repository }}/pages/builds || true
